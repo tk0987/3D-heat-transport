@@ -1,2 +1,6 @@
 # 3D-heat-transport
-just one material. made for fun
+
+
+Figure_4.000s_az0_el25.png
+
+
