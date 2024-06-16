@@ -1,6 +1,8 @@
 # 3D-heat-transport
 
 
-Figure_4.000s_az0_el25.png
+both .py files are commented.
+
+if one needs to simulate solid material heating (temperature distribution), then one can use this code.
 
 
