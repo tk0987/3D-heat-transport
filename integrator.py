@@ -15,7 +15,7 @@ b_thick=20 # in greyscale, but also in 0.1 mm. aha, its plate thickness
 
 dt=0.05 # time step in seconds
 
-geometry_filepath = r"/home/user/Desktop/temp_solver/cooler2.jpg" # CHECK 111 times. it should be an image,\
+geometry_filepath = f"C:\\Users\\TK\\Desktop\\heat\\cooler2.jpg" # CHECK 111 times. it should be an image,\
 # \that pillow can open
 
 temp_max=350.15 # kelvins
@@ -58,24 +58,28 @@ geometry=voxelize_2Darray(geometry1)
 
 # ===========================================================================
 # ============TEMP INIT======================================================
+print("Temperature initialization...")
 temperatures=np.zeros_like(geometry)
 
 for k in tqdm(range(len(geometry[0,0]))):
     for i in range(len(geometry)):
         for j in range(len(geometry[0])):
-            if k<1 and geometry[i,j,k]>0.0: # the temperature of the base: the heater...
+            if k<1 and geometry[i,j,k]>0.0 and ((i>100 )and (i<600) and (j>200) and (j<1200 )): # the temperature of the base: the heater...
                 temperatures[i,j,k]+=temp_max
+            if k<1 and geometry[i,j,k]>0.0 and not ((i>100 )and (i<600) and (j>200) and (j<1200 )): # the temperature of the base: not the heater...
+                temperatures[i,j,k]+=temp_ambient
             if k>=1 and geometry[i,j,k]>0.0:
                 temperatures[i,j,k]+=temp_ambient
 # c=1.0 # c=(k/(rho*c_p))
-np.save("temp_0.npy",temperatures)
-np.save("geometry.npy",geometry)
+np.save(f"C:\\Users\\TK\\Desktop\\heat\\temp_0.npy",temperatures)
+np.save(f"C:\\Users\\TK\\Desktop\\heat\\geometry.npy",geometry)
 # print(np.shape(temperatures))
 
 time=0.0
 # ========================integrating part=======================================
 voxel_neighbors=[[-1,-1,-1],[0,-1,-1],[1,-1,-1],[-1,0,-1],[0,0,-1],[1,0,-1],[-1,1,-1],[0,1,-1],[1,1,-1]] # always look down!!!!
-while time<=30.0: # seconds, my i3-4000m likes that! 1.37 it/s...
+while time<=4.0: # seconds, my i3-4000m likes that! 1.37 it/s...
+    print(str(time)+"\n")
     for z in tqdm(range(1,len(geometry[0,0])-1,1)):
         for x in range(1,len(geometry)-1,1):
             for y in range(1,len(geometry[0])-1,1):
@@ -87,17 +91,18 @@ while time<=30.0: # seconds, my i3-4000m likes that! 1.37 it/s...
 
                     for dx,dy,dz in voxel_neighbors:
                         if geometry[x+dx,y+dy,z+dz]>0.0:
-                            sum+=temperatures[x+dx,y+dy,z+dz]
+                            sum+=temperatures[x+dx,y+dy,z+dz] # bad line - laplace op. includes division by squared distance 1e-4 [m] units. keep in mind! lazy today, maybe tommorow
                             ii+=1
-                        else:
-                            continue
 
-                    temperatures[x,y,z]+=c*(sum-(ii)*temperatures[x,y,z])*dt*10000 # laplace ;)
-                else:
-                    continue
+
+                    temperatures[x,y,z]+=c*(sum-(ii)*temperatures[x,y,z])*dt*10000 # laplace ;) 
+                    
+
 
     time+=dt
     print(time)
-    # if time%2<=0.03 and time%2>=0.98:
-    np.save(f"temperatures_time:{time:.4f}.npy",temperatures)
-    print(f"saved at time = {time:.4f}")
+    if abs(time%1)<=0.01:
+    # try:
+        np.save(f"C:/Users/TK/Desktop/heat/temperatures_time_{time:.4f}.npy",temperatures)
+
+        print(f"saved at time = {time:.4f}")
