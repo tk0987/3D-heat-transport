@@ -129,17 +129,17 @@ while time<=30.0:
                     sum21=0.0
                     ii21=0
                     # print("water")
-                    for i2 in range(len(distances)):
-                        if geometry[x+voxel_neighbors[i2][0],y+voxel_neighbors[i2][1],z+voxel_neighbors[i2][2]]<0.5:
-                            sum21+=temperatures[x+voxel_neighbors[i2][0],y+voxel_neighbors[i2][1],z+voxel_neighbors[i2][2]]/distances[i2]
-                            ii21+=1
+                    for i in range(len(distances)):
+                        if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]<0.5:
+                            sum+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
+                            ii+=1
                     temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000             
 
 
     time+=dt
     print(time)
-    if abs(time%1)<=0.01:
+    #if abs(time%#1)<=0.01:
     # try:
-        np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
+    np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
 
-        print(f"saved at time = {time:.4f}")
+    print(f"saved at time = {time:.4f}")
