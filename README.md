@@ -6,7 +6,9 @@ both .py files are commented.
 if one needs to simulate solid material heating (temperature distribution), then one can use this code.
 
 
-while 4d plotting you should be able to distinguish copper radiator and surrounding water
+while 4d plotting you should be able to distinguish copper radiator and surrounding water after at least 2 seconds of simulated time
 
 
 the aim is to determine TDPs of different fin geometries
+
+Performance: this is not efficient code. for ryzen 7 5800x it takes ~13 minutes to finish one integration loop with given geometry. those 13 minutes are only 0.05 seconds of simulated heat spreading time!!!
