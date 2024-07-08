@@ -1,0 +1,2 @@
+here .npy data re stored
+shape=(x_pixels,y_pixels,z_pixels,temperature)
