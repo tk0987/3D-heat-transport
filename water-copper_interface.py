@@ -104,6 +104,7 @@ while time<=30.0:
             for y in range(1,len(geometry[0])-1,1):
 # ____coordinates to check section____
             #    ======= COPPER PART =====
+                # print("copper")
                 sum=0.0
                 ii=0
                 if geometry[x,y,z]>0.0:
@@ -116,21 +117,23 @@ while time<=30.0:
                     #    ======= COPPER/WATER PART =====
                 sum2=0.0
                 ii2=0
+                # print("water/copper")
                 if geometry[x,y,z]<0.5:
 
-                    for i in range(len(water_distances_full)):
-                        if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.0:
-                            sum2+=temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]/water_distances_full[i]
+                    for i1 in range(len(water_distances_full)):
+                        if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.0:
+                            sum2+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
                             ii2+=1
                     temperatures[x,y,z]+=cwt/c*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
                 #    ======= WATER PART =====
-                sum21=0.0
-                ii21=0
-                for i in range(len(water_distances_full)):
-                    if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]<0.5:
-                        sum21+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
-                        ii21+=1
-                temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000             
+                    sum21=0.0
+                    ii21=0
+                    # print("water")
+                    for i2 in range(len(distances)):
+                        if geometry[x+voxel_neighbors[i2][0],y+voxel_neighbors[i2][1],z+voxel_neighbors[i2][2]]<0.5:
+                            sum21+=temperatures[x+voxel_neighbors[i2][0],y+voxel_neighbors[i2][1],z+voxel_neighbors[i2][2]]/distances[i2]
+                            ii21+=1
+                    temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000             
 
 
     time+=dt
