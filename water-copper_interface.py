@@ -124,7 +124,7 @@ while time<=30.0:
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.0:
                             sum2+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
                             ii2+=1
-                    temperatures[x,y,z]+=c/cwt*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
+                    temperatures[x,y,z]+=(c*cwt)/(c+cwt)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
                 #    ======= WATER PART =====
                     sum21=0.0
                     ii21=0
