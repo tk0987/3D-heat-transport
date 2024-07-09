@@ -16,10 +16,10 @@ cwt=(k2/(rho2*c_p2))
 
 
 
-x_pixels=700 # 7 cm
-y_pixels=1400 # 14 cm
-z_heigth=35 # in greyscale, but also in 0.1 mm. aha, its fin heigth
-b_thick=20 # in greyscale, but also in 0.1 mm. aha, its plate thickness
+x_pixels=350 # 7 cm
+y_pixels=700 # 14 cm
+z_heigth=10 # in greyscale, but also in 0.1 mm. aha, its fin heigth
+b_thick=10 # in greyscale, but also in 0.1 mm. aha, its plate thickness
 
 dt=0.05 # time step in seconds
 
@@ -38,7 +38,7 @@ def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
     for i in tqdm(range(len(img_array))):
         for j in range(len(img_array[0])):
             img_array[i,j]+=base_thickness
-            if (i>200 )and (i<500) and (j>400) and (j<1000 )and (i%spacing<=3):
+            if (i>len(img_array)//6)and (i<len(img_array)//3) and (j>len(img_array[0])//6) and (j<len(img_array[0])//3)and (i%spacing<=3):
                 # if :
                 img_array[i,j]+=fin_heigth
     return img_array
@@ -74,7 +74,7 @@ temperatures=np.zeros_like(geometry)
 for k in tqdm(range(len(geometry[0,0]))):
     for i in range(len(geometry)):
         for j in range(len(geometry[0])):
-            if k<1 and geometry[i,j,k]>0.0 and ((i>100 )and (i<600) and (j>200) and (j<1200 )): # the temperature of the base: the heater...
+            if k<1 and geometry[i,j,k]>0.0 and ((i>x_pixels//4)and (i<x_pixels//2) and (j>y_pixels//4) and (j<y_pixels//2)): # the temperature of the base: the heater...
                 temperatures[i,j,k]+=temp_max
             if k<1 and geometry[i,j,k]>0.0 and not ((i>100 )and (i<600) and (j>200) and (j<1200 )): # the temperature of the base: not the heater...
                 temperatures[i,j,k]+=temp_ambient
