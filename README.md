@@ -11,4 +11,4 @@ while 4d plotting you should be able to distinguish copper radiator and surround
 
 the aim is to determine TDPs of different fin geometries
 
-Performance: this is not efficient code. for ryzen 7 5800x it takes ~13 minutes to finish one integration loop with given geometry. those 13 minutes are only 0.05 seconds of simulated heat spreading time!!!
+Performance: this is not efficient code. for ryzen 7 5800x 1 s of simulation takes 20 mins (now)
