@@ -80,7 +80,7 @@ for k in tqdm(range(len(geometry[0,0]))):
                 temperatures[i,j,k]+=temp_ambient
             if k>=1 and geometry[i,j,k]>0.0:
                 temperatures[i,j,k]+=temp_ambient
-            if k>=1 and geometry[i,j,k]<0.1:
+            if geometry[i,j,k]<0.1:
                 temperatures[i,j,k]+=temp_ambient
                 
 
@@ -124,7 +124,7 @@ while time<=30.0:
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.0:
                             sum2+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
                             ii2+=1
-                    temperatures[x,y,z]+=(c*cwt)/(c+cwt)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
+                    temperatures[x,y,z]+=c*cwt/(cwt+c)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
                 #    ======= WATER PART =====
                     sum21=0.0
                     ii21=0
@@ -132,14 +132,14 @@ while time<=30.0:
                     for i in range(len(distances)):
                         if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]<0.5:
                             sum+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
-                            ii+=1
+                            ii21+=1
                     temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000             
 
 
     time+=dt
     print(time)
-    #if abs(time%#1)<=0.01:
+    if abs(time%1)<=0.01:
     # try:
-    np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
+        np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
 
-    print(f"saved at time = {time:.4f}")
+        print(f"saved at time = {time:.4f}")
