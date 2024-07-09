@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
 # copper
@@ -16,16 +16,16 @@ cwt=(k2/(rho2*c_p2))
 
 
 
-x_pixels=350 # 7 cm
-y_pixels=700 # 14 cm
-z_heigth=10 # in greyscale, but also in 0.1 mm. aha, its fin heigth
-b_thick=10 # in greyscale, but also in 0.1 mm. aha, its plate thickness
+x_pixels=350 # 3.5 cm
+y_pixels=700 # 7 cm
+z_heigth=5 # in greyscale, but also in 0.1 mm. aha, its fin heigth
+b_thick=5 # in greyscale, but also in 0.1 mm. aha, its plate thickness
 
 dt=0.05 # time step in seconds
 
 geometry_filepath = f"cooler2.jpg" # CHECK 111 times. it should be an image,\
 # \that pillow can open
-
+# fin_no= 10
 temp_max=350.15 # kelvins
 temp_ambient=293.15 #kelvins, room temp of copper
 
@@ -38,14 +38,15 @@ def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
     for i in tqdm(range(len(img_array))):
         for j in range(len(img_array[0])):
             img_array[i,j]+=base_thickness
-            if (i>len(img_array)//6)and (i<len(img_array)//3) and (j>len(img_array[0])//6) and (j<len(img_array[0])//3)and (i%spacing<=3):
-                # if :
+            # if (i==len(img_array)//2) and (j>len(img_array[0])//6) and (j<len(img_array[0])//3):
+            if i>(len(img_array)//2-len(img_array)//4) and i < (len(img_array)//2+len(img_array)//4)and j>(len(img_array[0])//2-len(img_array[0])//4) and j < (len(img_array[0])//2+len(img_array[0])//4) and (i%spacing<=3):
+                
                 img_array[i,j]+=fin_heigth
     return img_array
 
 def voxelize_2Darray(array):
     max_h=np.max(array)
-    geometry=np.zeros((len(array),len(array[0]),int(max_h*1.5)))
+    geometry=np.zeros((len(array),len(array[0]),int(max_h*2.0)))
     print("Voxelizing...")
     for x in tqdm(range(len(geometry))):
         for y in range(len(geometry[0])):
@@ -62,6 +63,8 @@ except FileNotFoundError as e:
     geometry1=create_geometry(x_size=x_pixels,y_size=y_pixels,fin_heigth=z_heigth,base_thickness=b_thick,spacing=spacing)
     # image=Image.fromarray(geometry1,mode='L')
     # image.show()
+    # plt.contourf(geometry1)
+    # plt.show()
 
 geometry1=np.asanyarray(geometry1,dtype=np.float16)
 geometry=voxelize_2Darray(geometry1)
@@ -74,9 +77,9 @@ temperatures=np.zeros_like(geometry)
 for k in tqdm(range(len(geometry[0,0]))):
     for i in range(len(geometry)):
         for j in range(len(geometry[0])):
-            if k<1 and geometry[i,j,k]>0.0 and ((i>x_pixels//4)and (i<x_pixels//2) and (j>y_pixels//4) and (j<y_pixels//2)): # the temperature of the base: the heater...
+            if k<1 and geometry[i,j,k]>0.0 and i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3): # the temperature of the base: the heater...
                 temperatures[i,j,k]+=temp_max
-            if k<1 and geometry[i,j,k]>0.0 and not ((i>100 )and (i<600) and (j>200) and (j<1200 )): # the temperature of the base: not the heater...
+            if k<1 and geometry[i,j,k]>0.0 and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
                 temperatures[i,j,k]+=temp_ambient
             if k>=1 and geometry[i,j,k]>0.0:
                 temperatures[i,j,k]+=temp_ambient
