@@ -11,4 +11,6 @@ while 4d plotting you should be able to distinguish copper radiator and surround
 
 the aim is to determine TDPs of different fin geometries
 
-Performance: this is not efficient code. for ryzen 7 5800x 1 s of simulation takes 20 mins (now)
+Performance: this is not efficient code. for ryzen 7 5800x 0.05s takes 40s of real time
+
+matplotlib is worse - it was computing lastest 4d whole night
