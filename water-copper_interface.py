@@ -32,7 +32,7 @@ temp_ambient=293.15 #kelvins, room temp of copper
 spacing=6 # spacing in pixels, also in 0.1 mm
 
 def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
-    img_array=np.zeros((x_size,y_size),dtype=np.int8)
+    img_array=np.zeros((x_size,y_size),dtype=np.float16)
 
     print("Generating basic geometry:")
     for i in tqdm(range(len(img_array))):
@@ -46,7 +46,7 @@ def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
 
 def voxelize_2Darray(array):
     max_h=np.max(array)
-    geometry=np.zeros((len(array),len(array[0]),int(max_h*2.0)))
+    geometry=np.zeros((len(array),len(array[0]),int(max_h*2.0+1)))
     print("Voxelizing...")
     for x in tqdm(range(len(geometry))):
         for y in range(len(geometry[0])):
@@ -77,11 +77,11 @@ temperatures=np.zeros_like(geometry)
 for k in tqdm(range(len(geometry[0,0]))):
     for i in range(len(geometry)):
         for j in range(len(geometry[0])):
-            if k<1 and geometry[i,j,k]>0.0 and i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3): # the temperature of the base: the heater...
+            if k<1 and geometry[i,j,k]>0.5 and i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3): # the temperature of the base: the heater...
                 temperatures[i,j,k]+=temp_max
-            if k<1 and geometry[i,j,k]>0.0 and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
+            if k<1 and geometry[i,j,k]>0.5 and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
                 temperatures[i,j,k]+=temp_ambient
-            if k>=1 and geometry[i,j,k]>0.0:
+            if k>=1 and geometry[i,j,k]>0.5:
                 temperatures[i,j,k]+=temp_ambient
             if geometry[i,j,k]<0.1:
                 temperatures[i,j,k]+=temp_ambient
