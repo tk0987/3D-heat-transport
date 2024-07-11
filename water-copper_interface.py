@@ -51,7 +51,7 @@ def voxelize_2Darray(array):
     for x in tqdm(range(len(geometry))):
         for y in range(len(geometry[0])):
             for z in range(len(geometry[0,0])):
-                if array[x,y]>=z:
+                if array[x,y]>z:
                     geometry[x,y,z]+=1.0
 
     return geometry
@@ -101,7 +101,7 @@ water_distances_full=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772
 water_neighbors_full=[[-1,-1,-1],[0,-1,-1],[1,-1,-1],[-1,0,-1],[0,0,-1],[1,0,-1],[-1,1,-1],[0,1,-1],[1,1,-1],\
     [-1,-1,0],[0,-1,0],[1,-1,0],[-1,0,0],[1,0,0],[-1,1,0],[0,1,0],[1,1,0],\
         [-1,-1,1],[0,-1,1],[1,-1,1],[-1,0,1],[1,0,1],[-1,1,1],[0,1,1],[1,1,1]]
-while time<=30.0:
+while time<=60.0:
     for z in tqdm(range(1,len(geometry[0,0])-1,1)):
         for x in range(1,len(geometry)-1,1):
             for y in range(1,len(geometry[0])-1,1):
@@ -109,12 +109,14 @@ while time<=30.0:
             #    ======= COPPER PART =====
                 # print("copper")
                 sum=0.0
+
                 ii=0
-                if geometry[x,y,z]>0.0:
+                if geometry[x,y,z]>0.6:
 
                     for i in range(len(distances)):
-                        if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]>0.0:
+                        if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]>0.5:
                             sum+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
+                            
                             ii+=1
                     temperatures[x,y,z]+=c*(sum-(ii)*temperatures[x,y,z])*dt*10000
                     #    ======= COPPER/WATER PART =====
@@ -124,7 +126,7 @@ while time<=30.0:
                 if geometry[x,y,z]<0.5:
 
                     for i1 in range(len(water_distances_full)):
-                        if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.0:
+                        if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
                             sum2+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
                             ii2+=1
                     temperatures[x,y,z]+=c*cwt/(cwt+c)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
@@ -134,15 +136,15 @@ while time<=30.0:
                     # print("water")
                     for i in range(len(distances)):
                         if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]<0.5:
-                            sum+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
+                            sum21+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
                             ii21+=1
                     temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000             
 
 
     time+=dt
-    print(time)
-    if abs(time%1)<=0.01:
+    # print(time)
+    # if abs(time%1)<=(0.4):
     # try:
-        np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
+    np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
 
-        print(f"saved at time = {time:.4f}")
+    print(f"saved at time = {time:.4f}")
