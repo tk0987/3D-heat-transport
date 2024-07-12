@@ -39,10 +39,10 @@ def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
         for j in range(len(img_array[0])):
             img_array[i,j]+=base_thickness
             # if (i==len(img_array)//2) and (j>len(img_array[0])//6) and (j<len(img_array[0])//3):
-            if i>(len(img_array)//2-len(img_array)//4) and i < (len(img_array)//2+len(img_array)//4)and j>(len(img_array[0])//2-len(img_array[0])//4) and j < (len(img_array[0])//2+len(img_array[0])//4) and (i%spacing<=3):
+            if (i>(len(img_array)//2-len(img_array)//4) and i < (len(img_array)//2+len(img_array)//4)) and (j>(len(img_array[0])//2-len(img_array[0])//4) and j < (len(img_array[0])//2+len(img_array[0])//4)) and (i%spacing<=3):
                 
                 img_array[i,j]+=fin_heigth
-    return img_array
+    return np.asanyarray(img_array,dtype=np.int8)
 
 def voxelize_2Darray(array):
     max_h=np.max(array)
@@ -61,7 +61,7 @@ try:
     geometry1 = Image.open(geometry_filepath)
 except FileNotFoundError as e:
     geometry1=create_geometry(x_size=x_pixels,y_size=y_pixels,fin_heigth=z_heigth,base_thickness=b_thick,spacing=spacing)
-    # image=Image.fromarray(geometry1,mode='L')
+    # image=Image.fromarray(geometry1.astype(np.int8),mode='L')
     # image.show()
     # plt.contourf(geometry1)
     # plt.show()
@@ -101,7 +101,7 @@ water_distances_full=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772
 water_neighbors_full=[[-1,-1,-1],[0,-1,-1],[1,-1,-1],[-1,0,-1],[0,0,-1],[1,0,-1],[-1,1,-1],[0,1,-1],[1,1,-1],\
     [-1,-1,0],[0,-1,0],[1,-1,0],[-1,0,0],[1,0,0],[-1,1,0],[0,1,0],[1,1,0],\
         [-1,-1,1],[0,-1,1],[1,-1,1],[-1,0,1],[1,0,1],[-1,1,1],[0,1,1],[1,1,1]]
-while time<=60.0:
+while time<=600.0:
     for z in tqdm(range(1,len(geometry[0,0])-1,1)):
         for x in range(1,len(geometry)-1,1):
             for y in range(1,len(geometry[0])-1,1):
