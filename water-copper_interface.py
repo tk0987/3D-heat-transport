@@ -21,7 +21,7 @@ y_pixels=700 # 7 cm
 z_heigth=5 # in greyscale, but also in 0.1 mm. aha, its fin heigth
 b_thick=5 # in greyscale, but also in 0.1 mm. aha, its plate thickness
 
-dt=0.05 # time step in seconds
+dt=0.001 # time step in seconds
 
 geometry_filepath = f"cooler2.jpg" # CHECK 111 times. it should be an image,\
 # \that pillow can open
@@ -46,7 +46,7 @@ def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
 
 def voxelize_2Darray(array):
     max_h=np.max(array)
-    geometry=np.zeros((len(array),len(array[0]),int(max_h*2.0+1)))
+    geometry=np.zeros((len(array),len(array[0]),int(max_h+1)))
     print("Voxelizing...")
     for x in tqdm(range(len(geometry))):
         for y in range(len(geometry[0])):
@@ -84,7 +84,7 @@ for k in tqdm(range(len(geometry[0,0]))):
             if k>=1 and geometry[i,j,k]>0.5:
                 temperatures[i,j,k]+=temp_ambient
             if geometry[i,j,k]<0.1:
-                temperatures[i,j,k]+=temp_ambient
+                temperatures[i,j,k]+=temp_ambient-5
                 
 
 # c=1.0 # c=(k/(rho*c_p))
@@ -113,15 +113,17 @@ while time<=600.0:
                 ii=0
                 if geometry[x,y,z]>0.6:
 
-                    for i in range(len(distances)):
-                        if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]>0.5:
-                            sum+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
+                    for i in range(len(water_distances_full)):
+                        if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
+                            sum+=temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]/water_distances_full[i]
                             
                             ii+=1
                     temperatures[x,y,z]+=c*(sum-(ii)*temperatures[x,y,z])*dt*10000
                     #    ======= COPPER/WATER PART =====
                 sum2=0.0
                 ii2=0
+                sum21=0.0
+                ii21=0
                 # print("water/copper")
                 if geometry[x,y,z]<0.5:
 
@@ -129,16 +131,14 @@ while time<=600.0:
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
                             sum2+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
                             ii2+=1
-                    temperatures[x,y,z]+=c*cwt/(cwt+c)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
-                #    ======= WATER PART =====
-                    sum21=0.0
-                    ii21=0
-                    # print("water")
-                    for i in range(len(distances)):
-                        if geometry[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]<0.5:
-                            sum21+=temperatures[x+voxel_neighbors[i][0],y+voxel_neighbors[i][1],z+voxel_neighbors[i][2]]/distances[i]
+                        temperatures[x,y,z]+=c*cwt/(cwt+c)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
+                        if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]<0.5:
+                            sum21+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
                             ii21+=1
-                    temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000             
+                        temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000
+
+
+                                     
 
 
     time+=dt
