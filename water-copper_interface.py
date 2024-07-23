@@ -145,8 +145,20 @@ while time<=600.0:
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
                             sum2+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))/float(water_distances_full[i1])
                         sum2=sum2*sum2
-                        temperatures[x,y,z]+=(c*cwt/(cwt+c))*(sum2*temperatures[x,y,z])*dt*10000
+                        temperatures[x,y,z]+=(c*cwt/(cwt+c))*(sum2)*dt*10000
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]<0.5:
                             sum21+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))
                         sum21=sum21*sum21
                         temperatures[x,y,z]+=cwt*(sum21)*dt*10000
+
+
+                                     
+
+
+    time+=dt
+    # print(time)
+    # if abs(time%1)<=(0.4):
+    # try:
+    np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
+
+    print(f"saved at time = {time:.4f}")
