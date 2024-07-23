@@ -16,12 +16,12 @@ cwt=(k2/(rho2*c_p2))
 
 
 
-x_pixels=350 # 3.5 cm
-y_pixels=700 # 7 cm
+x_pixels=200 # 3.5 cm
+y_pixels=400 # 7 cm
 z_heigth=5 # in greyscale, but also in 0.1 mm. aha, its fin heigth
 b_thick=5 # in greyscale, but also in 0.1 mm. aha, its plate thickness
 
-dt=0.001 # time step in seconds
+dt=0.05 # time step in seconds
 
 geometry_filepath = f"cooler2.jpg" # CHECK 111 times. it should be an image,\
 # \that pillow can open
@@ -79,11 +79,13 @@ for k in tqdm(range(len(geometry[0,0]))):
         for j in range(len(geometry[0])):
             if k<1 and geometry[i,j,k]>0.5 and i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3): # the temperature of the base: the heater...
                 temperatures[i,j,k]+=temp_max
-            if k<1 and geometry[i,j,k]>0.5 and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
+            elif k<1 and geometry[i,j,k]>0.5 and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
                 temperatures[i,j,k]+=temp_ambient
-            if k>=1 and geometry[i,j,k]>0.5:
+            elif k>=1 and geometry[i,j,k]>0.5:
                 temperatures[i,j,k]+=temp_ambient
-            if geometry[i,j,k]<0.1:
+            elif geometry[i,j,k]<0.1:
+                temperatures[i,j,k]+=temp_ambient-5
+            else:
                 temperatures[i,j,k]+=temp_ambient-5
                 
 
@@ -106,7 +108,7 @@ water_distances_full=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772
 
 
 water_neighbors_full=[[-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [-1, 1, -1], [-1, 1, 0], [-1, 1, 1], [0, -1, -1], [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1], [0, 1, -1], [0, 1, 0], [0, 1, 1], [1, -1, -1], [1, -1, 0], [1, -1, 1], [1, 0, -1], [1, 0, 0], [1, 0, 1], [1, 1, -1], [1, 1, 0], [1, 1, 1]]
-
+# print(len(water_distances_full))
 
 while time<=600.0:
     for z in tqdm(range(1,len(geometry[0,0])-1,1)):
@@ -117,15 +119,20 @@ while time<=600.0:
                 # print("copper")
                 sum=0.0
 
-                ii=0
+                su1=0
                 if geometry[x,y,z]>0.6:
 
                     for i in range(len(water_distances_full)):
                         if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
-                            sum+=temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]/water_distances_full[i]
-                            
-                            ii+=1
-                    temperatures[x,y,z]+=c*(sum-(ii)*temperatures[x,y,z])*dt*10000
+                            sum+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]))/float(water_distances_full[i])
+                        sum=sum*sum
+                            # ii+=1
+                        temperatures[x,y,z]+=c*sum*dt*10000
+                        if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
+                            su1+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]))/float(water_distances_full[i])
+                        su1=su1*su1
+                            # ii+=1
+                        temperatures[x,y,z]+=c*cwt/(c+cwt)*su1*dt*10000
                     #    ======= COPPER/WATER PART =====
                 sum2=0.0
                 ii2=0
@@ -136,13 +143,13 @@ while time<=600.0:
 
                     for i1 in range(len(water_distances_full)):
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
-                            sum2+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
-                            ii2+=1
-                        temperatures[x,y,z]+=c*cwt/(cwt+c)*(sum2-(ii2)*temperatures[x,y,z])*dt*10000
+                            sum2+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))/float(water_distances_full[i1])
+                        sum2=sum2*sum2
+                        temperatures[x,y,z]+=(c*cwt/(cwt+c))*(sum2*temperatures[x,y,z])*dt*10000
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]<0.5:
-                            sum21+=temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]/water_distances_full[i1]
-                            ii21+=1
-                        temperatures[x,y,z]+=cwt*(sum21-(ii21)*temperatures[x,y,z])*dt*10000
+                            sum21+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))
+                        sum21=sum21*sum21
+                        temperatures[x,y,z]+=cwt*(sum21*temperatures[x,y,z])*dt*10000
 
 
                                      
@@ -155,3 +162,4 @@ while time<=600.0:
     np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
 
     print(f"saved at time = {time:.4f}")
+
