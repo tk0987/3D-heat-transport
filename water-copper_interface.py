@@ -4,17 +4,17 @@ import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
 # copper
-c_p = 385 # copper: J/(kg*K)
-k=401 # copper: W/(m* K)
-rho=8850 # kg/m**3
-c=(k/(rho*c_p))
+c_p = 385.0 # copper: J/(kg*K)
+k=401.0 # copper: W/(m* K)
+rho=8850.0 # kg/m**3
+c=float(k/(rho*c_p))
 # water
-c_p2 = 4187 # water: J/(kg*K)
+c_p2 = 4187.0 # water: J/(kg*K)
 k2=0.5918 # copper: W/(m* K)
-rho2=999# kg/m**3
-cwt=(k2/(rho2*c_p2))
+rho2=999.0# kg/m**3
+cwt=float(k2/(rho2*c_p2))
 
-
+c_interface=float((c*cwt)/c+cwt)
 
 x_pixels=200 # 3.5 cm
 y_pixels=400 # 7 cm
@@ -77,13 +77,13 @@ temperatures=np.zeros_like(geometry)
 for k in tqdm(range(len(geometry[0,0]))):
     for i in range(len(geometry)):
         for j in range(len(geometry[0])):
-            if k<1 and geometry[i,j,k]>0.5 and i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3): # the temperature of the base: the heater...
+            if ((k<1) and (geometry[i,j,k]>0.5)) and (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: the heater...
                 temperatures[i,j,k]+=temp_max
-            elif k<1 and geometry[i,j,k]>0.5 and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
+            elif ((k<1) and (geometry[i,j,k]>0.5)) and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
                 temperatures[i,j,k]+=temp_ambient
-            elif k>=1 and geometry[i,j,k]>0.5:
+            elif ((k>=1) and (geometry[i,j,k]>0.5)):
                 temperatures[i,j,k]+=temp_ambient
-            elif geometry[i,j,k]<0.1:
+            elif (geometry[i,j,k]<0.1):
                 temperatures[i,j,k]+=temp_ambient-5
             else:
                 temperatures[i,j,k]+=temp_ambient-5
@@ -117,39 +117,39 @@ while time<=600.0:
 # ____coordinates to check section____
             #    ======= COPPER PART =====
                 # print("copper")
-                sum=0.0
 
-                su1=0
                 if geometry[x,y,z]>0.6:
+                    sum=0.0
 
+                    su1=0
                     for i in range(len(water_distances_full)):
                         if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
-                            sum+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]))/float(water_distances_full[i])
-                        sum=sum*sum
+                            sum+=(temperatures[x,y,z]**2-float(temperatures[x+int(water_neighbors_full[i][0]),y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2/float(water_distances_full[i])**2)
+                        # sum=np.power(sum,2)
                             # ii+=1
-                        temperatures[x,y,z]+=c*sum*dt*10000
-                        if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
-                            su1+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]))/float(water_distances_full[i])
-                        su1=su1*su1
+                        temperatures[x,y,z]+=c*sum*dt/10000
+                        if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]<0.5:
+                            su1+=temperatures[x,y,z]**2-float(float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2)/float(water_distances_full[i])**2
+                        # su1=np.power(su1,2)
                             # ii+=1
-                        temperatures[x,y,z]+=c*cwt/(c+cwt)*su1*dt*10000
+                        temperatures[x,y,z]+=c_interface*su1*dt/10000
                     #    ======= COPPER/WATER PART =====
-                sum2=0.0
-                ii2=0
-                sum21=0.0
-                ii21=0
+
                 # print("water/copper")
                 if geometry[x,y,z]<0.5:
-
+                    sum2=0.0
+                    ii2=0
+                    sum21=0.0
+                    ii21=0
                     for i1 in range(len(water_distances_full)):
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
-                            sum2+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))/float(water_distances_full[i1])
-                        sum2=sum2*sum2
-                        temperatures[x,y,z]+=(c*cwt/(cwt+c))*(sum2)*dt*10000
+                            sum2+=float(temperatures[x,y,z]**2-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]])**2)/float(water_distances_full[i1])**2
+                        # sum2=np.power(sum2,2)
+                        temperatures[x,y,z]+=c_interface*(sum2)*dt/10000
                         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]<0.5:
-                            sum21+=float(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))
-                        sum21=sum21*sum21
-                        temperatures[x,y,z]+=cwt*(sum21)*dt*10000
+                            sum21+=float(temperatures[x,y,z]**2-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))**2/float(water_distances_full[i1])**2
+                        # sum21=np.power(sum21,2)
+                        temperatures[x,y,z]+=cwt*(sum21)*dt/10000
 
 
                                      
