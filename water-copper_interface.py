@@ -1,3 +1,11 @@
+"""
+
+VERIFICATION FAILED
+NEED TO TAKE SURFACE INTO ACCOUNT
+DONT KNOW WHEN ILL HAVE TIME
+
+"""
+
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
