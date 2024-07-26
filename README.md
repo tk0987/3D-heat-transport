@@ -14,3 +14,6 @@ the aim is to determine TDPs of different fin geometries
 Performance: this is not efficient code. for ryzen 7 5800x 0.05s takes 40s of real time
 
 matplotlib is worse - it was computing lastest 4d whole night
+
+
+please note, i'm working on intel core i3-4000m laptop (4GB RAM) now. So, the newest version 4D plot is very,very small - every 64th point was shown.
