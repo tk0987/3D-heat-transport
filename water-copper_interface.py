@@ -5,7 +5,6 @@ NEED TO TAKE SURFACE INTO ACCOUNT
 DONT KNOW WHEN ILL HAVE TIME
 
 """
-
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -29,7 +28,7 @@ y_pixels=400 # 7 cm
 z_heigth=5 # in greyscale, but also in 0.1 mm. aha, its fin heigth
 b_thick=5 # in greyscale, but also in 0.1 mm. aha, its plate thickness
 
-dt=0.05 # time step in seconds
+dt=0.005 # time step in seconds
 
 geometry_filepath = f"cooler2.jpg" # CHECK 111 times. it should be an image,\
 # \that pillow can open
@@ -132,32 +131,33 @@ while time<=600.0:
                     su1=0
                     for i in range(len(water_distances_full)):
                         if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
-                            sum+=(temperatures[x,y,z]**2-float(temperatures[x+int(water_neighbors_full[i][0]),y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2/float(water_distances_full[i])**2)
+                            sum+=c*((temperatures[x,y,z]**2-float(temperatures[x+int(water_neighbors_full[i][0]),y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2/float(water_distances_full[i])**2))*dt
                         # sum=np.power(sum,2)
                             # ii+=1
-                        temperatures[x,y,z]+=c*sum*dt/10000
+                        temperatures[x,y,z]+=sum
                         if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]<0.5:
-                            su1+=temperatures[x,y,z]**2-float(float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2)/float(water_distances_full[i])**2
-                        # su1=np.power(su1,2)
-                            # ii+=1
-                        temperatures[x,y,z]+=c_interface*su1*dt/10000
+                        #     su1+=temperatures[x,y,z]**2-float(float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2)/float(water_distances_full[i])**2
+                            continue
+                        # # su1=np.power(su1,2)
+                        #     # ii+=1
+                        # temperatures[x,y,z]+=c_interface*su1*dt/10000
                     #    ======= COPPER/WATER PART =====
 
                 # print("water/copper")
-                if geometry[x,y,z]<0.5:
-                    sum2=0.0
-                    ii2=0
-                    sum21=0.0
-                    ii21=0
-                    for i1 in range(len(water_distances_full)):
-                        if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
-                            sum2+=float(temperatures[x,y,z]**2-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]])**2)/float(water_distances_full[i1])**2
-                        # sum2=np.power(sum2,2)
-                        temperatures[x,y,z]+=c_interface*(sum2)*dt/10000
-                        if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]<0.5:
-                            sum21+=float(temperatures[x,y,z]**2-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))**2/float(water_distances_full[i1])**2
-                        # sum21=np.power(sum21,2)
-                        temperatures[x,y,z]+=cwt*(sum21)*dt/10000
+                # if geometry[x,y,z]<0.5:
+                #     sum2=0.0
+                #     ii2=0
+                #     sum21=0.0
+                #     ii21=0
+                #     for i1 in range(len(water_distances_full)):
+                #         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]>0.5:
+                #             sum2+=float(temperatures[x,y,z]**2-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]])**2)/float(water_distances_full[i1])**2
+                #         # sum2=np.power(sum2,2)
+                #         temperatures[x,y,z]+=c_interface*(sum2)*dt/10000
+                #         if geometry[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]<0.5:
+                #             sum21+=float(temperatures[x,y,z]**2-float(temperatures[x+water_neighbors_full[i1][0],y+water_neighbors_full[i1][1],z+water_neighbors_full[i1][2]]))**2/float(water_distances_full[i1])**2
+                #         # sum21=np.power(sum21,2)
+                #         temperatures[x,y,z]+=cwt*(sum21)*dt/10000
 
 
                                      
