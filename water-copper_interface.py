@@ -131,13 +131,14 @@ while time<=600.0:
                     su1=0
                     for i in range(len(water_distances_full)):
                         if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>0.5:
-                            sum+=c*((temperatures[x,y,z]**2-float(temperatures[x+int(water_neighbors_full[i][0]),y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2/float(water_distances_full[i])**2))*dt
-                        # sum=np.power(sum,2)
-                            # ii+=1
+                            sum+=c*(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])/float(water_distances_full[i]))**2*dt
+                            # if sum<=0:
+                            #     print("fail")
                         temperatures[x,y,z]+=sum
-                        if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]<0.5:
-                        #     su1+=temperatures[x,y,z]**2-float(float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2)/float(water_distances_full[i])**2
-                            continue
+
+                        # if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]<0.5:
+                        # #     su1+=temperatures[x,y,z]**2-float(float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])**2)/float(water_distances_full[i])**2
+                        #     continue
                         # # su1=np.power(su1,2)
                         #     # ii+=1
                         # temperatures[x,y,z]+=c_interface*su1*dt/10000
@@ -162,9 +163,14 @@ while time<=600.0:
 
                                      
 
-
+    print(np.min(temperatures),np.max(temperatures))
     time+=dt
     # print(time)
+    # if abs(time%1)<=(0.4):
+    # try:
+    np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
+
+    print(f"saved at time = {time:.4f}")
     # if abs(time%1)<=(0.4):
     # try:
     np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
