@@ -10,7 +10,7 @@ to achieve this aim:
 
 # heat transport inside copper/any_material radiator will be computed
 
-# heat transport between radiator will be computed (surface cooling)
+# heat transport between radiator and stable temperature fluid will be computed (surface cooling)
 
 # decrease of temperature of radiator surface will be performed
 
