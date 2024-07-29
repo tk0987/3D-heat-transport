@@ -1,5 +1,5 @@
 # trying to measure the heat...
-# theres 60 watt diffuse source
+# theres 240 watt diffuse source - under the fins of arbitrary geo
 
 import numpy as np
 from PIL import Image
@@ -113,13 +113,13 @@ time=0.0
 voxel_neighbors=[[-1,-1,-1],[0,-1,-1],[1,-1,-1],[-1,0,-1],[0,0,-1],[1,0,-1],[-1,1,-1],[0,1,-1],[1,1,-1]]
 distances=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772]
 water_distances_full=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.0, 1.0, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772]
-
+areas_full=[2.9999999999999996, 2.0000000000000004, 2.9999999999999996, 2.0000000000000004, 1.0, 2.0000000000000004, 2.9999999999999996, 2.0000000000000004, 2.9999999999999996, 2.0000000000000004, 1.0, 2.0000000000000004, 1.0, 1.0, 2.0000000000000004, 1.0, 2.0000000000000004, 2.9999999999999996, 2.0000000000000004, 2.9999999999999996, 2.0000000000000004, 1.0, 2.0000000000000004, 2.9999999999999996, 2.0000000000000004, 2.9999999999999996]
 
 water_neighbors_full=[[-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [-1, 1, -1], [-1, 1, 0], [-1, 1, 1], [0, -1, -1], [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1], [0, 1, -1], [0, 1, 0], [0, 1, 1], [1, -1, -1], [1, -1, 0], [1, -1, 1], [1, 0, -1], [1, 0, 0], [1, 0, 1], [1, 1, -1], [1, 1, 0], [1, 1, 1]]
 # print(len(water_distances_full))
 heats=[0]
 heat=0.0
-while time<=600.0:
+while time<=5.0:
     for z in tqdm(range(1,len(geometry[0,0])-1,1)):
         for x in range(1,len(geometry)-1,1):
             for y in range(1,len(geometry[0])-1,1):
@@ -129,7 +129,7 @@ while time<=600.0:
                 for a in range(len(geometry)):
                     for b in range(len(geometry[0])):
                         if ((z<1) and (geometry[a,b,0]>0.5)) and (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: the heater...
-                            temperatures[a,b,0]+=240/4*(x_pixels//2+x_pixels//3)*(y_pixels//2-y_pixels//3)*rho*c_p # 240 W / m**2 * rho * c_p
+                            temperatures[a,b,0]+=240/(4*(x_pixels//2+x_pixels//3)*(y_pixels//2-y_pixels//3)*rho*c_p) # 240 W / m**2 * rho * c_p
                 if geometry[x,y,z]>0.6:
                     sum=0.0
                     su2=0
@@ -143,22 +143,19 @@ while time<=600.0:
                         temperatures[x,y,z]+=sum
                         if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]==0.5:
                             
-                            su1-=cwt*(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])/float(water_distances_full[i]))
-                        #     # if sum<=0:
-                        #     #     print("fail")
-                        heats.append(su1*rho2*c_p2)
-                        heat+=su1*rho2*c_p2
-                        # temperatures[x,y,z]+=su1*rho*c_p
+                            su1-=c_interface*areas_full[i]*(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])/float(water_distances_full[i]))
+                        temperatures[x,y,z]+=su1
+                        heats.append(su1)
 
-                    # for i in range(len(water_distances_full)):
-                    #     if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]>=0.5:
-                    #         su2+=cwt*(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])/float(water_distances_full[i]))**2*dt
-                    #         # if sum<=0:
-                    #         #     print("fail")
-                    #     temperatures[x,y,z]+=su2                      
+                    if geometry[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]]<=0.5:
+                        for i in range(len(water_distances_full)):
+                            su2+=cwt*(float(temperatures[x,y,z])-float(temperatures[x+water_neighbors_full[i][0],y+water_neighbors_full[i][1],z+water_neighbors_full[i][2]])/float(water_distances_full[i]))**2*dt
+                    #        
+                    temperatures[x,y,z]+=su2  
+                     
                                      
             
-    print(np.min(temperatures),np.max(temperatures),temperatures[4,4,4])
+    print(np.min(temperatures),np.max(temperatures),temperatures[len(temperatures)//2,len(temperatures[0])//2,len(temperatures[0,0])//2])
     time+=dt
     # print(time)
     # if abs(time%1)<=(0.4):
@@ -167,5 +164,5 @@ while time<=600.0:
 
     print(f"saved at time = {time:.4f}")
 
-print(heat)
-np.save("heats.npy",np.asanyarray(heats))
+    np.save(f"heats_{time}.npy",np.asanyarray(heats))
+    # print(heats)
