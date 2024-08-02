@@ -1,5 +1,6 @@
 # trying to measure the heat...
 # theres 240 watt diffuse source - under the fins of arbitrary geo
+# 02.08.2024c - needed to replace '*' with '/'. my apologies!
 
 import numpy as np
 from PIL import Image
@@ -138,11 +139,14 @@ while time <= 5.0:
                         # print(f"sum_heat: {sum_heat}")
                     
                     if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] == 0.5:
-                        heat=c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
+                        # heat=c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
                         su1 -= c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
-                        temperatures[x, y, z] -= heat* rho * c_p
-                        temperatures[x+ water_neighbors_full[i][0], y+ water_neighbors_full[i][1], z+ water_neighbors_full[i][2]] += heat* rho2 * c_p2
-                        # print([f"su1: {su1}",f"heat_{heat}"])
+                        heat = c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
+
+                        # Update temperatures
+                        temperatures[x, y, z] -= heat / (rho * c_p)
+                        temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] += heat / (rho2 * c_p2)
+
                     heats.append(su1)
 
                     if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] < 0.4:
