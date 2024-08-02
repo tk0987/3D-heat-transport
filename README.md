@@ -10,8 +10,6 @@ to achieve this aim:
 
 # heat transport inside copper/any_material radiator will be computed
 
-# heat transport between radiator and stable temperature fluid will be computed (surface cooling)
-
 # decrease of temperature of radiator surface will be performed
 
 currently at stage no. 2. note, that one full iteration of loops takes 1.5 h on my i3 4000m. night is long
