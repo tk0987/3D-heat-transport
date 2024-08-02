@@ -14,4 +14,4 @@ to achieve this aim:
 
 # decrease of temperature of radiator surface will be performed
 
-currently at stage no. 1
+currently at stage no. 2. note, that one full iteration of loops takes 1.5 h on my i3 4000m. night is long
