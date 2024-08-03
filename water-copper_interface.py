@@ -139,10 +139,9 @@ while time <= 5.0:
                         # print(f"sum_heat: {sum_heat}")
                     
                     if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] == 0.5:
-                        # note: i'll join this 'if' statement with this one below it, if it 'll be stable
                         # heat=c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
-                        su1 -= c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
-                        heat = c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float(water_distances_full[i]))
+                        su1 -= c_interface * float(areas_full[i]) * ((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) )/ float(water_distances_full[i])
+                        heat = c_interface * float(areas_full[i]) * ((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]))) / float(water_distances_full[i])
 
                         # Update temperatures
                         temperatures[x, y, z] -= heat / (rho * c_p)
@@ -166,5 +165,5 @@ while time <= 5.0:
 
     print(f"saved at time = {time:.4f}")
 
-    np.save(f"heats_{time}.npy",np.asanyarray(heats))
+    np.save(f"heats_{time}.npy",np.sum(np.asanyarray(heats)))
     print(np.sum(np.asanyarray(heats)))
