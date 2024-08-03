@@ -127,7 +127,7 @@ while time <= 5.0:
                 for a in range(len(geometry)):
                     for b in range(len(geometry[0])):
                         if (z < 1 and geometry[a, b, 0] > 0.5) and (x_pixels // 2 - x_pixels // 3 < i < x_pixels // 2 + x_pixels // 3 and y_pixels // 2 - y_pixels // 3 < j < y_pixels // 2 + y_pixels // 3):
-                            temperatures[a, b, 0] += 240 * dt / (4 * (x_pixels // 2 + x_pixels // 3) * (y_pixels // 2 + y_pixels // 3) * rho * c_p)  # 240 W / (m**2 * rho * c_p)
+                            temperatures[a, b, 0] += 30 * dt / (4 * (x_pixels // 2 + x_pixels // 3) * (y_pixels // 2 + y_pixels // 3) * rho * c_p)  # 240 W / (m**2 * rho * c_p)
                 
                 sum_heat = 0.0
                 su1=0.0
