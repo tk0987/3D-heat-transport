@@ -1,4 +1,3 @@
-# trying to measure the heat...
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ cwt=float(k2/(rho2*c_p2))
 
 c_interface=float((c*cwt)/c+cwt)
 
-scaling_factor_m=10000 # acting in 0.1 mm
+scaling_factor_m=10000 # acting in 1 mm
 
 
 x_pixels=200 # 3.5 cm
@@ -134,27 +133,27 @@ while time <= 500.0:
                 heat=0.0
                 for i in range(len(water_distances_full)):
                     if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] > 0.5:
-                        sum_heat += (((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float(water_distances_full[i]/scaling_factor_m)) ** 2) * dt
+                        sum_heat += (((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float(water_distances_full[i])) ** 2) * dt
                         # print(f"sum_heat: {sum_heat}")
                     
                     if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] == 0.5:
-                        # heat=c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float((water_distances_full[i]/scaling_factor_m)))
-                        su1 -= c_interface * float(areas_full[i]) * ((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float((water_distances_full[i]/scaling_factor_m)))
-                        heat = c_interface * float(areas_full[i]) * ((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float((water_distances_full[i]/scaling_factor_m)))
+                        # heat=c_interface * float(areas_full[i]) * (float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / float((water_distances_full[i])))
+                        su1 -= c_interface * float(areas_full[i]) * ((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float((water_distances_full[i])))
+                        heat = c_interface * float(areas_full[i]) * ((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float((water_distances_full[i])))
 
                         # Update temperatures
-                        temperatures[x, y, z] -= heat / (rho * c_p)
-                        temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] += heat / (rho2 * c_p2)
+                        temperatures[x, y, z] -= heat / (rho * c_p)*scaling_factor_m
+                        temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] += heat / (rho2 * c_p2)*scaling_factor_m
 
                     heats.append(su1)
 
                     if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] < 0.4:
                         for j in range(len(water_distances_full)):
-                            su2 += cwt * (((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float(water_distances_full[i]/scaling_factor_m)) ** 2) * dt
+                            su2 += cwt * (((float(temperatures[x, y, z]) - float(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])) / float(water_distances_full[i])) ** 2) * dt
                             # print(f"su2: {su2}")
 
-                    temperatures[x, y, z] += su2
-                    temperatures[x, y, z] += sum_heat
+                    temperatures[x, y, z] += su2*scaling_factor_m**2
+                    temperatures[x, y, z] += sum_heat*scaling_factor_m**2
 
      
     print(np.min(temperatures),np.max(temperatures),temperatures[len(temperatures)//2,len(temperatures[0])//2,len(temperatures[0,0])//2])
@@ -162,10 +161,6 @@ while time <= 500.0:
     
     np.save(f"temperatures_time_{time:.4f}.npy",temperatures)
 
-    print(f"saved at time = {time:.4f}")
-
-    np.save(f"heats_{time}.npy",np.sum(np.asanyarray(heats)))
-    print(np.sum(np.asanyarray(heats)))
     print(f"saved at time = {time:.4f}")
 
     np.save(f"heats_{time}.npy",np.sum(np.asanyarray(heats)))
