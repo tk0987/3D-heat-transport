@@ -1,6 +1,6 @@
 # 3D-heat-transport
 
-note: all of the voxels have dimensions of 1x1x1 meter. meter. if one wanna scale it, then manipulate with densities in the code (but dont touch their init). multiply them by desired volume, and beware of overflow.
+note: all of the voxels have dimensions of 1x1x1 meter. meter. if one wanna scale it, then manipulate with densities in the code (but dont touch their init). multiply them by desired volume, and beware of overflow. remember also of dividing distances matrix by length of voxel side
 
 results by time ll be easily scallable
 
