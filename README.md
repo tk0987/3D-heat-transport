@@ -4,6 +4,8 @@ note: all of the voxels have dimensions of 1x1x1 meter. meter. if one wanna scal
 
 results by time ll be easily scallable
 
+simulation time is proportional to simulated volume. if one simulate bigger volume, then time = desired_volume/simulated_volume*simulation_time
+
 if one needs to simulate solid material heating (temperature distribution), then one can use this code.
 
 while 4d plotting you should be able to distinguish copper radiator and surrounding water after at least 2 seconds of simulated time
