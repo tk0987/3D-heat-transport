@@ -1,5 +1,9 @@
 # 3D-heat-transport
 
+note: all of the voxels have dimensions of 1x1x1 meter. meter. if one wanna scale it, then manipulate with densities in the code (but dont touch their init). multiply them by desired volume, and beware of overflow.
+
+results by time ll be easily scallable
+
 if one needs to simulate solid material heating (temperature distribution), then one can use this code.
 
 while 4d plotting you should be able to distinguish copper radiator and surrounding water after at least 2 seconds of simulated time
