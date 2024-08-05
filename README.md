@@ -12,6 +12,6 @@ to achieve this aim:
 
 # decrease of temperature of radiator surface will be performed
 
-currently at stage no. 2. note, that one full iteration of loops takes 9 h on my i3 4000m. night is long. and this 9 h is just 0.05 s. i cannot use colab, neither pc
+currently at stage no. 2. note, that one full iteration of loops takes 2-6 (code dependendent) min on my i3 4000m. night is long. and this 2 min is just 0.05 s. i cannot use colab, neither pc
 
 another code measures max heat transfer at the interface - relative to energy added
