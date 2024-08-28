@@ -1,23 +1,15 @@
 # 3D-heat-transport
 
-note: all of the voxels have dimensions of 1x1x1 meter. meter. if one wanna scale it, then manipulate with densities in the code (but dont touch their init). multiply them by desired volume, and beware of overflow. remember also of dividing distances matrix by length of voxel side
+note: all of the voxels have dimensions of 1x1x1 meter. 
 
-results by time ll be easily scallable
+meter. 
 
-simulation time is proportional to simulated volume. if one simulate bigger volume, then time = desired_volume/simulated_volume*simulation_time
+simulation time is proportional to simulated volume. if one simulate bigger volume, then: 
+
+# time = desired_volume/simulated_volume*simulation_time
 
 if one needs to simulate solid material heating (temperature distribution), then one can use this code.
 
-while 4d plotting you should be able to distinguish copper radiator and surrounding water after at least 2 seconds of simulated time
-
 the aim is to determine TDPs of different fin geometries
 
-to achieve this aim:
-
-# heat transport inside copper/any_material radiator will be computed
-
-# decrease of temperature of radiator surface will be performed
-
-currently at stage no. 2. note, that one full iteration of loops takes 2-6 (code dependendent) min on my i3 4000m. night is long. and this 2 min is just 0.05 s. i cannot use colab, neither pc
-
-another code measures max heat transfer at the interface - relative to energy added
+another code measures max heat transfer at the interface - relative to energy added, to obtain transfered_heat vs time curve
