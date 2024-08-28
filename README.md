@@ -6,7 +6,7 @@ meter.
 
 simulation time is proportional to simulated volume. if one simulate bigger volume, then: 
 
-# time = desired_volume/simulated_volume*simulation_time
+# time = (desired_volume/simulated_volume)*simulation_time
 
 if one needs to simulate solid material heating (temperature distribution), then one can use this code.
 
