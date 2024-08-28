@@ -1,199 +1,148 @@
 import numpy as np
 from PIL import Image
-import math
+# import matplotlib.pyplot as plt
 from tqdm import tqdm
+# import math
 import warnings
+
 warnings.simplefilter('error')
-# copper
-c_p = 385.0 # copper: J/(kg*K)
-k=401.0 # copper: W/(m* K)
-rho=8850.0 # 1kg/m**3
-c=np.float128(k/(rho*c_p))
-# water
-c_p2 = 4187.0 # water: J/(kg*K)
-k2=0.5918 # copper: W/(m* K)
-rho2=999.0# 1kg/m**3
-cwt=np.float128(k2/(rho2*c_p2))
 
-c_interface=np.float128((c*cwt)/c+cwt)
+# Constants for copper
+c_p = 385.0  # J/(kg*K)
+k = 401.0  # W/(m*K)
+rho = 8850.0  # kg/m^3
+c = k / (rho * c_p)
 
-scaling_factor_m=1# cause of overflows
+# Constants for water
+c_p2 = 4187.0  # J/(kg*K)
+k2 = 0.5918  # W/(m*K)
+rho2 = 999.0  # kg/m^3
+cwt = k2 / (rho2 * c_p2)
 
+c_interface = (c * cwt) / (c + cwt)
+scaling_factor_m = 100  # Scaling to prevent overflow
 
-x_pixels=200 # 3.5 cm
-y_pixels=400 # 7 cm
-z_heigth=5 # in greyscale, but also in 0.1 mm. aha, its fin heigth
-b_thick=5 # in greyscale, but also in 0.1 mm. aha, its plate thickness
+# Geometry parameters
+x_pixels = 200
+y_pixels = 400
+z_height = 5
+b_thick = 5
+dt = 100.0  # Time step in seconds
+temp_max = 350.15  # Maximum temperature in Kelvin
+temp_ambient = 293.15  # Ambient temperature in Kelvin
+spacing = 6  # Spacing in pixels
 
-dt=100 # time step in seconds
-
-geometry_filepath = f"cooler2.jpg" # CHECK 111 times. it should be an image,\
-# \that pillow can open
-# fin_no= 10
-temp_max=350.15 # kelvins
-temp_ambient=293.15 #kelvins, room temp of copper
-
-spacing=6 # spacing in pixels, also in 0.1 mm
-
-def create_geometry(x_size,y_size,fin_heigth,base_thickness,spacing):
-    img_array=np.zeros((x_size,y_size),dtype=np.float64)
+# Geometry creation function
+def create_geometry(x_size, y_size, fin_height, base_thickness, spacing):
+    img_array = np.zeros((x_size, y_size), dtype=np.float64)
 
     print("Generating basic geometry:")
-    for i in tqdm(range(len(img_array))):
-        for j in range(len(img_array[0])):
-            img_array[i,j]+=base_thickness
-            # if (i==len(img_array)//2) and (j>len(img_array[0])//6) and (j<len(img_array[0])//3):
-            if (i>(len(img_array)//2-len(img_array)//4) and i < (len(img_array)//2+len(img_array)//4)) and (j>(len(img_array[0])//2-len(img_array[0])//4) and j < (len(img_array[0])//2+len(img_array[0])//4)) and (i%spacing<=3):
-                
-                img_array[i,j]+=fin_heigth
-    return np.asanyarray(img_array,dtype=np.int8)
+    for i in tqdm(range(x_size)):
+        for j in range(y_size):
+            img_array[i, j] += base_thickness
+            if (i > x_size // 2 - x_size // 4) and (i < x_size // 2 + x_size // 4) and (j > y_size // 2 - y_size // 4) and (j < y_size // 2 + y_size // 4) and (i % spacing <= 3):
+                img_array[i, j] += fin_height
 
+    return img_array.astype(np.int8)
+
+# Voxelization function
 def voxelize_2Darray(array):
-    max_h=np.max(array)
-    geometry=np.zeros((len(array),len(array[0]),int(max_h+2)))
+    max_h = np.max(array)
+    geometry = np.zeros((len(array), len(array[0]), int(max_h + 1)), dtype=np.float64)
+
     print("Voxelizing...")
     for x in tqdm(range(len(geometry))):
         for y in range(len(geometry[0])):
-            for z in range(len(geometry[0,0])):
-                if array[x,y]>z:
-                    geometry[x,y,z]+=1.0
-                if array[x,y]==z:
-                    geometry[x,y,z]+=0.5
+            for z in range(len(geometry[0, 0])):
+                if array[x, y] > z:
+                    geometry[x, y, z] += 1.0
+                elif array[x, y] == z:
+                    geometry[x, y, z] += 0.5
 
     return geometry
 
-
+# Load or create geometry
 try:
-    geometry1 = Image.open(geometry_filepath)
-except FileNotFoundError as e:
-    geometry1=create_geometry(x_size=x_pixels,y_size=y_pixels,fin_heigth=z_heigth,base_thickness=b_thick,spacing=spacing)
-    # image=Image.fromarray(geometry1.astype(np.int8),mode='L')
-    # image.show()
-    # plt.contourf(geometry1)
-    # plt.show()
+    geometry1 = Image.open("cooler2.jpg")
+except FileNotFoundError:
+    geometry1 = create_geometry(x_size=x_pixels, y_size=y_pixels, fin_height=z_height, base_thickness=b_thick, spacing=spacing)
 
-geometry1=np.asanyarray(geometry1,dtype=np.float64)
-geometry=voxelize_2Darray(geometry1)
+geometry1 = np.asarray(geometry1, dtype=np.float64)
+geometry = voxelize_2Darray(geometry1)
 
-# ===========================================================================
-# ============TEMP INIT======================================================
+# Temperature initialization
 print("Temperature initialization...")
-temperatures=np.zeros_like(geometry)
+temperatures = np.full_like(geometry, temp_ambient, dtype=np.float64)
 
-for k in tqdm(range(len(geometry[0,0]))):
-    for i in range(len(geometry)):
-        for j in range(len(geometry[0])):
-            # if ((k<1) and (geometry[i,j,k]>0.5)) and (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: the heater...
-            #     temperatures[i,j,k]+=temp_max
-            # elif ((k<1) and (geometry[i,j,k]>0.5)) and not (i>(x_pixels//2-x_pixels//3) and i < (x_pixels//2+x_pixels//3)and j>(y_pixels//2-y_pixels//3) and j < (y_pixels//2+y_pixels//3)): # the temperature of the base: not the heater...
-            #     temperatures[i,j,k]+=temp_ambient
-            # elif ((k>=1) and (geometry[i,j,k]>0.5)):
-            #     temperatures[i,j,k]+=temp_ambient
-            # elif (geometry[i,j,k]<0.1):
-            #     temperatures[i,j,k]+=temp_ambient
-            # else:
-            temperatures[i,j,k]+=temp_ambient
-                
+# Heat transfer constants
+water_distances_full = [1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.0, 1.0, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732]
+areas_full = [0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 1.0, 1.0, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333]
+water_neighbors_full = [[-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [-1, 1, -1], [-1, 1, 0], [-1, 1, 1], 
+                                 [0, -1, -1], [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1], [0, 1, -1], [0, 1, 0], [0, 1, 1], 
+                                 [1, -1, -1], [1, -1, 0], [1, -1, 1], [1, 0, -1], [1, 0, 0], [1, 0, 1], [1, 1, -1], [1, 1, 0], [1, 1, 1]]
 
-# c=1.0 # c=(k/(rho*c_p))
-np.save(f"temp_0.npy",temperatures)
-np.save(f"geometry.npy",geometry)
-# print(np.shape(temperatures))
-'''
-[1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.0, 1.0, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772]
-
-[[-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [-1, 1, -1], [-1, 1, 0], [-1, 1, 1], [0, -1, -1], [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1], [0, 1, -1], [0, 1, 0], [0, 1, 1], [1, -1, -1], [1, -1, 0], [1, -1, 1], [1, 0, -1], [1, 0, 0], [1, 0, 1], [1, 1, -1], [1, 1, 0], [1, 1, 1]]
-
-'''
-time=0.0
-# ========================integrating part=======================================
-# voxel_neighbors=[[-1,-1,-1],[0,-1,-1],[1,-1,-1],[-1,0,-1],[0,0,-1],[1,0,-1],[-1,1,-1],[0,1,-1],[1,1,-1]] # always look down!!!!
-# water_neighbors_full=[[-1,-1,-1],[0,-1,-1],[1,-1,-1],[-1,0,-1],[0,0,-1],[1,0,-1],[-1,1,-1],[0,1,-1],[1,1,-1]]
-# water_neighbors_full=[[-1,-1,0],[0,-1,0],[1,-1,0],[-1,0,0],[0,0,0],[1,0,0],[-1,1,0],[0,1,0],[1,1,0],[-1,-1,1],[0,-1,1],[1,-1,1],[-1,0,1],[0,0,1],[1,0,1],[-1,1,1],[0,1,0],[1,1,1]]
-# distances=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772]
-# water_distances_full=[1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772]
-# water_distances_full=[1.4142135623730951, 1.4142135623730951, 1.4142135623730951, 1.4142135623730951, 1.0, 1.4142135623730951, 1.4142135623730951, 1.4142135623730951, 1.4142135623730951,1.7320508075688772, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.0, 1.4142135623730951, 1.7320508075688772, 1.4142135623730951, 1.7320508075688772]
-water_distances_full=[1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.0, 1.0, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732]
-# areas_full=[0.33333333333333337, 0.4999999999999999, 0.33333333333333337, 0.4999999999999999, 1.0, 0.4999999999999999, 0.33333333333333337, 0.4999999999999999, 0.33333333333333337]
-areas_full=np.asanyarray([0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 1.0, 1.0, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333])
-# print(areas_full)
-water_neighbors_full=[[-1, -1, -1], [-1, -1, 0], [-1, -1, 1], [-1, 0, -1], [-1, 0, 0], [-1, 0, 1], [-1, 1, -1], [-1, 1, 0], [-1, 1, 1], [0, -1, -1], [0, -1, 0], [0, -1, 1], [0, 0, -1], [0, 0, 1], [0, 1, -1], [0, 1, 0], [0, 1, 1], [1, -1, -1], [1, -1, 0], [1, -1, 1], [1, 0, -1], [1, 0, 0], [1, 0, 1], [1, 1, -1], [1, 1, 0], [1, 1, 1]]
-# print(len(water_distances_full))
-area=4 * (x_pixels // 2 + x_pixels // 3) * (y_pixels // 2 + y_pixels // 3)/scaling_factor_m**2
-temp_inc=300* dt / (rho * c_p)
+area = 4 * (x_pixels // 2 + x_pixels // 3) * (y_pixels // 2 + y_pixels // 3) / scaling_factor_m ** 2
+temp_inc = 300 * dt / (rho * c_p) # 300 [W]
+time = 0.0
+heats1=[]
+# Time integration loop
 while True:
-    # temp_inc=300* dt / (rho/1000.0 * c_p)
     heats = []
     for a in range(len(geometry)):
         for b in range(len(geometry[0])):
-            if ((geometry[a, b, 0] > 0.5) and 
-                (x_pixels // 2 - x_pixels // 3 < a < x_pixels // 2 + x_pixels // 3) and 
-                (y_pixels // 2 - y_pixels // 3 < b < y_pixels // 2 + y_pixels // 3)):
-                temperatures[a, b, 0]+=temp_inc # 30 W * t / (m**3 * rho * c_p) -> [K]
+            if geometry[a, b, 0] > 0.5:
+                temperatures[a, b, 0] = np.clip(temperatures[a, b, 0] + temp_inc, temp_ambient, temp_max)
+
     try:
         for z in tqdm(range(1, len(geometry[0, 0]) - 1)):
-
-
             for x in range(1, len(geometry) - 1):
                 for y in range(1, len(geometry[0]) - 1):
-                    
                     sum_heat = 0.0
-                    su1=0.0
-                    su2=0.0
-                    heat=0.0
+                    sum_heat2=0.0
                     
                     for i in range(len(water_distances_full)):
                         if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] > 0.5:
                             a = temperatures[x, y, z]
                             b = temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]
                             distance = water_distances_full[i]
+                            
+                            delta_temp = np.subtract(a, b)
+                            sum_heat += c * dt * (delta_temp**2) / (distance**2)
+                            
+                    temperatures[x, y, z] += sum_heat
 
-                            sum_heat += c * dt * (np.divide(a**2 - 2 * a * b + b**2, distance**2))
-                        temperatures[x, y, z] +=sum_heat
+                    for i in range(len(water_distances_full)):
+                        if (geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] == 0.5):
+                            delta_temp = np.subtract(temperatures[x, y, z], temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])
+                            heat = c_interface * areas_full[i] * delta_temp / water_distances_full[i]
+                            temperatures[x, y, z] -= heat / (rho * c_p)
+                            temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] += heat / (rho * c_p)
+
+                            heats.append(heat)
+                    for i in range(len(water_distances_full)):
+                        if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] < 0.5:
+                            a = temperatures[x, y, z]
+                            b = temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]
+                            distance = water_distances_full[i]
+                            
+                            delta_temp = np.subtract(a, b)
+                            sum_heat2 += cwt * dt * (delta_temp**2) / (distance**2)
+                            
+                    temperatures[x, y, z] += sum_heat2
                     
-                    
-                    
-                        if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] == 0.5:
-                            # heat=c_interface * np.float128(areas_full[i]) * (np.float128(temperatures[x, y, z]) - np.float128(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]) / np.float128((water_distances_full[i])))
-                        
-                            su1 -= c_interface * areas_full[i] *np.divide(np.subtract(temperatures[x, y, z],temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]),(water_distances_full[i]/10.0))
-                            heat = c_interface * areas_full[i] * np.divide(np.subtract(temperatures[x, y, z],temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]),(water_distances_full[i]/10.0))
-
-                            # Update temperatures
-                            np.subtract(temperatures[x, y, z],np.divide(heat, rho/1000.0 * c_p))
-                            temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] = temp_ambient
-
-                        heats.append(su1)
-
-
-                        if geometry[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]] < 0.4:
-                            for j in range(len(water_distances_full)):
-                                # su2 += cwt*dt*np.power(np.divide(np.subtract(temperatures[x, y, z],temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]),(water_distances_full[i]/10.0)),2)
-                                # print(f"su2: {su2}")
-                                a = temperatures[x, y, z]
-                                b = temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]]
-                                distance = water_distances_full[i]
-
-                                su2+= cwt * dt * (np.divide(a**2 - 2 * a * b + b**2, distance**2))
-                            temperatures[x, y, z] += np.float128(su2)
-                        
-
-        if math.isnan(np.min(temperatures)) or math.isnan(np.max(temperatures)) or math.isnan(np.sum(np.asanyarray(heats))):
-            break     
-        print(np.min(temperatures),np.max(temperatures),temperatures[len(temperatures)//2,len(temperatures[0])//2,len(temperatures[0,0])//2])
-        time+=dt
-        
-        np.save(f"temperatures.npy",temperatures)
-
-        print(f"saved at time = {time:.4f}")
-        if np.sum(np.asanyarray(heats)) != 0.0:
-            np.save(f"HEAT_TRANSFER_heats_{time}.npy",np.sum(np.asanyarray(heats)))
-            print(f"saved at time = {time:.4f}")
-            print(np.sum(np.asanyarray(heats)))
-    except RuntimeWarning as e:
-        print(e)
-        print([x,y,z])
-        print(temperatures[x,y,z])
-        for i in range(len(water_distances_full)):
-            print(temperatures[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]],[x + water_neighbors_full[i][0], y + water_neighbors_full[i][1], z + water_neighbors_full[i][2]])
+        sth=np.sum(heats)
+        heats1.append(sth)
+        if np.isnan(np.min(temperatures)) or np.isnan(np.max(temperatures)):
+            break
+        if sth>0:
+            np.save(f"temps_new_{time}.npy",temperatures)
+            print(f"saved at: {time} [s]")
+        print(np.min(temperatures), np.max(temperatures), temperatures[len(temperatures)//2, len(temperatures[0])//2, len(temperatures[0, 0])//2],[sth,time])
+        time += dt
+    except FloatingPointError:
+        print(f'FloatingPointError at time step {time} seconds')
         break
+
+# plt.imshow(temperatures[:, :, 2], cmap='hot', interpolation='nearest')
+# plt.colorbar()
+# plt.show()
