@@ -62,28 +62,19 @@ vector<vector<vector<float>>> voxelize_2Darray(const vector<vector<float>>& arra
 const double c_p = 385.0;
 const double k = 401.0;
 const double rho = 8850.0;
-const long double c = k / (rho * c_p);
+const long double alpha = k / (rho * c_p); // Thermal diffusivity
 
-// Water properties
+// Water properties (for heat exchange)
 const double c_p2 = 4187.0;
 const double k2 = 0.5918;
 const double rho2 = 999.0;
-const long double cwt = k2 / (rho2 * c_p2);
+const long double alpha2 = k2 / (rho2 * c_p2);
 
 // Interface diffusivity
-const long double c_interface = (c * cwt) / (c + cwt);
-
-// Scaling factor for avoiding overflows
-const int scaling_factor_m = 100;
-
-// Pixel dimensions
-const int x_pixels = 200;
-const int y_pixels = 400;
-const int z_height = 5;
-const int b_thick = 5;
+const long double c_interface = (alpha * alpha2) / (alpha + alpha2);
 
 // Time step in seconds
-const double dt = 0.1;
+const double dt = 10;
 
 // Temperature settings
 const double temp_max = 350.15;
@@ -91,7 +82,10 @@ const double temp_ambient = 293.15;
 
 // Spacing
 const int spacing = 6;
-
+const int b_thick=2;
+const int z_height=5;
+const int x_pixels=200;
+const int y_pixels=400;
 // Time initialization
 double t = 0.0;
 
@@ -100,18 +94,15 @@ vector<double> areas_full = {0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333
 
 // Water distances array
 vector<double> water_distances_full = {1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.0, 1.0, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732, 1.414, 1.0, 1.414, 1.732, 1.414, 1.732};
-
-// Water neighbors 2D array
 vector<array<int, 3>> water_neighbors_full = {
-    {-1, -1, -1}, {-1, -1, 0}, {-1, -1, 1}, {-1, 0, -1}, {-1, 0, 0}, {-1, 0, 1}, 
-    {-1, 1, -1}, {-1, 1, 0}, {-1, 1, 1}, {0, -1, -1}, {0, -1, 0}, {0, -1, 1}, 
-    {0, 0, -1}, {0, 0, 1}, {0, 1, -1}, {0, 1, 0}, {0, 1, 1}, {1, -1, -1}, 
-    {1, -1, 0}, {1, -1, 1}, {1, 0, -1}, {1, 0, 0}, {1, 0, 1}, {1, 1, -1}, 
-    {1, 1, 0}, {1, 1, 1}
+    {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}, 
+    {1, 1, 0}, {1, -1, 0}, {-1, 1, 0}, {-1, -1, 0}, {0, 1, 1}, {0, -1, 1}, 
+    {1, 0, 1}, {-1, 0, 1}, {0, 1, -1}, {0, -1, -1}, {1, 0, -1}, {-1, 0, -1}, 
+    {1, 1, 1}, {-1, -1, 1}, {1, -1, 1}, {-1, 1, 1}, {1, 1, -1}, {-1, -1, -1}, 
+    {1, -1, -1}, {-1, 1, -1}
 };
-
 // Calculation of temperature increment
-double temp_inc = 20000 * dt / (rho / 1000.0 * c_p);
+double temp_inc = 20000 * dt / (rho * c_p);
 
 int main() {
     // Initialize geometry and temperature arrays
@@ -129,7 +120,7 @@ int main() {
 
     // Integration loop
     print("Starting integration...");
-    double heat = 0.0;
+    double total_heat = 0.0;
     while (true) {
         // Energy adding phase
         for (int a = 0; a < geometry.size(); a++) {
@@ -142,46 +133,48 @@ int main() {
             }
         }
 
-        // Heat diffusion phase
+        // Heat diffusion phase using the Laplace operator
+        vector<vector<vector<float>>> new_temperatures = temperatures;
+        double heat_exchange = 0.0;
+
         for (int z = 1; z < geometry[0][0].size() - 1; z++) {
             for (int x = 1; x < geometry.size() - 1; x++) {
                 for (int y = 1; y < geometry[0].size() - 1; y++) {
-                    double sum_temp = 0.0;
-                    double su1 = 0.0;
-
+                    if (geometry[x][y][z] > 0.5) {
+                        double laplacian = (
+                            temperatures[x+1][y][z] + temperatures[x-1][y][z] +
+                            temperatures[x][y+1][z] + temperatures[x][y-1][z] +
+                            temperatures[x][y][z+1] + temperatures[x][y][z-1] - 
+                            6 * temperatures[x][y][z]
+                        );
+                        new_temperatures[x][y][z] += alpha * laplacian * dt;
+                    }
+                    
+                    // Idealistic heat exchange with adjacent water (if adjacent to water)
                     for (size_t i = 0; i < water_neighbors_full.size(); i++) {
                         int nx = x + water_neighbors_full[i][0];
                         int ny = y + water_neighbors_full[i][1];
                         int nz = z + water_neighbors_full[i][2];
-
-                        if (geometry[nx][ny][nz] > 0.6) {
+                        
+                        if (geometry[nx][ny][nz] == 0.5) {  // Assuming water exists in half-voxel
                             double temp_diff = temperatures[x][y][z] - temperatures[nx][ny][nz];
-                            sum_temp += c * dt * temp_diff * temp_diff / (water_distances_full[i] * water_distances_full[i]);
-                        }}
-                          temperatures[x][y][z] += sum_temp;
-                         for (size_t i = 0; i < water_neighbors_full.size(); i++) {
-                        int nx = x + water_neighbors_full[i][0];
-                        int ny = y + water_neighbors_full[i][1];
-                        int nz = z + water_neighbors_full[i][2];
-                        if (geometry[nx][ny][nz] == 0.5) {
-                            double temp_diff = temperatures[x][y][z] - temperatures[nx][ny][nz];
-                            su1 += c_interface * areas_full[i] * temp_diff / water_distances_full[i];
-                            temperatures[x][y][z] -= su1 / (rho * c_p);
-                            temperatures[nx][ny][nz] = temp_ambient;
+                            double heat_transfer = c_interface * areas_full[i] * temp_diff / water_distances_full[i];
+                            heat_exchange += heat_transfer;
+                            new_temperatures[x][y][z] -= heat_transfer / (rho * c_p);
+                            new_temperatures[nx][ny][nz] += heat_transfer / (rho2 * c_p2);  // Water temperature adjustment
                         }
                     }
-                   
-
-                   heat += su1;
-                    
                 }
             }
         }
-       
+
+        temperatures = new_temperatures;
         t += dt;
-       print("Time: " + to_string(t));
-        print("Heat: " + to_string(heat)); // 4 decimal places for heat
-          }
+        total_heat += heat_exchange;
+
+        // Print time and heat
+        print("Time: " + to_string(t) + "s, Heat: " + to_string(total_heat) + " J");
+    }
 
     return 0;
 }
