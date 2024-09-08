@@ -15,3 +15,5 @@ the aim is to determine TDPs of different fin geometries
 another code measures max heat transfer at the interface - relative to energy added, to obtain transfered_heat vs time curve
 
 # python integrators are unstable. c++ is the solution
+
+cpp code was stable up to 4J of heat exchanged or more. under validation!
