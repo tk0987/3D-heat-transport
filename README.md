@@ -16,4 +16,4 @@ another code measures max heat transfer at the interface - relative to energy ad
 
 # python integrators are unstable. c++ is the solution
 
-cpp code was stable up to 4J of heat exchanged or more. under validation!
+cpp code was stable up to 300J of heat exchanged or more (closed before nan). under validation!
