@@ -13,3 +13,5 @@ if one needs to simulate solid material heating (temperature distribution), then
 the aim is to determine TDPs of different fin geometries
 
 another code measures max heat transfer at the interface - relative to energy added, to obtain transfered_heat vs time curve
+
+# python integrators are unstable. c++ is the solution
