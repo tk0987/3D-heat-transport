@@ -121,7 +121,7 @@ int main() {
     // Integration loop
     print("Starting integration...");
     double total_heat = 0.0;
-    double heat;
+    
     while(!isnan(total_heat)){
     while (true) {
         // Energy adding phase
@@ -195,7 +195,7 @@ int main() {
         total_heat += heat_exchange;
 
         // Print time and heat
-        print("Time: " + to_string(t) + "s, Heat: " + to_string(total_heat) + " J");
+        print("Time: " + to_string(t) + "s, Heat: " + to_string(total_heat) + " J    at one iteration: "+ to_string(heat_exchange) + " J");
     }}
 
     return 0;
