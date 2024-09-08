@@ -74,7 +74,7 @@ const long double alpha2 = k2 / (rho2 * c_p2);
 const long double c_interface = (alpha * alpha2) / (alpha + alpha2);
 
 // Time step in seconds
-const double dt = 10;
+const double dt = 1;
 
 // Temperature settings
 const double temp_max = 350.15;
@@ -121,6 +121,8 @@ int main() {
     // Integration loop
     print("Starting integration...");
     double total_heat = 0.0;
+    double heat;
+    while(!isnan(total_heat)){
     while (true) {
         // Energy adding phase
         for (int a = 0; a < geometry.size(); a++) {
@@ -140,16 +142,36 @@ int main() {
         for (int z = 1; z < geometry[0][0].size() - 1; z++) {
             for (int x = 1; x < geometry.size() - 1; x++) {
                 for (int y = 1; y < geometry[0].size() - 1; y++) {
-                    if (geometry[x][y][z] > 0.5) {
-                        double laplacian = (
-                            temperatures[x+1][y][z] + temperatures[x-1][y][z] +
-                            temperatures[x][y+1][z] + temperatures[x][y-1][z] +
-                            temperatures[x][y][z+1] + temperatures[x][y][z-1] - 
-                            6 * temperatures[x][y][z]
-                        );
-                        new_temperatures[x][y][z] += alpha * laplacian * dt;
-                    }
+                if ((geometry[x][y][z] > 0.5) 
+                    && (temperatures[x+1][y][z] > 0.5) 
+                    && (temperatures[x-1][y][z] > 0.5) 
+                    && (temperatures[x][y+1][z] > 0.5) 
+                    && (temperatures[x][y-1][z] > 0.5)
+                    && (temperatures[x][y][z+1] > 0.5)
+                    && (temperatures[x][y][z-1] > 0.5)) {
                     
+                    int trueConditions = 0;
+                    if (temperatures[x+1][y][z] > 0.5) trueConditions++;
+                    if (temperatures[x-1][y][z] > 0.5) trueConditions++;
+                    if (temperatures[x][y+1][z] > 0.5) trueConditions++;
+                    if (temperatures[x][y-1][z] > 0.5) trueConditions++;
+                    if (temperatures[x][y][z+1] > 0.5) trueConditions++;
+                    if (temperatures[x][y][z-1] > 0.5) trueConditions++;
+
+                    double laplacian = (
+                        (temperatures[x+1][y][z] > 0.5 ? temperatures[x+1][y][z] : 0) +
+                        (temperatures[x-1][y][z] > 0.5 ? temperatures[x-1][y][z] : 0) +
+                        (temperatures[x][y+1][z] > 0.5 ? temperatures[x][y+1][z] : 0) +
+                        (temperatures[x][y-1][z] > 0.5 ? temperatures[x][y-1][z] : 0) +
+                        (temperatures[x][y][z+1] > 0.5 ? temperatures[x][y][z+1] : 0) +
+                        (temperatures[x][y][z-1] > 0.5 ? temperatures[x][y][z-1] : 0) -
+                        trueConditions * temperatures[x][y][z]
+                    );
+
+                    new_temperatures[x][y][z] += alpha * laplacian * dt;
+                }
+
+
                     // Idealistic heat exchange with adjacent water (if adjacent to water)
                     for (size_t i = 0; i < water_neighbors_full.size(); i++) {
                         int nx = x + water_neighbors_full[i][0];
@@ -161,7 +183,7 @@ int main() {
                             double heat_transfer = c_interface * areas_full[i] * temp_diff / water_distances_full[i];
                             heat_exchange += heat_transfer;
                             new_temperatures[x][y][z] -= heat_transfer / (rho * c_p);
-                            new_temperatures[nx][ny][nz] += heat_transfer / (rho2 * c_p2);  // Water temperature adjustment
+                            new_temperatures[nx][ny][nz] =temp_ambient;  // Water temperature adjustment
                         }
                     }
                 }
@@ -174,7 +196,7 @@ int main() {
 
         // Print time and heat
         print("Time: " + to_string(t) + "s, Heat: " + to_string(total_heat) + " J");
-    }
+    }}
 
     return 0;
 }
