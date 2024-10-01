@@ -18,6 +18,7 @@ vector<vector<float>> create_geometry(int x_size, int y_size, int fin_height, in
     
     for (int i = 0; i < x_size; i++) {
         for (int j = 0; j < y_size; j++) {
+            img_array[i][j] += base_thickness;
             if ((i > (x_size / 2 - x_size / 4) && i < (x_size / 2 + x_size / 4)) && 
                 (j > (y_size / 2 - y_size / 4) && j < (y_size / 2 + y_size / 4)) && 
                 (i % spacing <= 1)) {
@@ -44,7 +45,7 @@ vector<vector<vector<float>>> voxelize_2Darray(const vector<vector<float>>& arra
 
     for (int xx = 0; xx < x; xx++) {
         for (int yy = 0; yy < y; yy++) {
-            for (int zz = 0; zz <= static_cast<int>(z); zz++) {
+            for (int zz = 0; zz <= static_cast<int>(1 + z); zz++) {
                 if (array[xx][yy] > zz) {
                     geometry[xx][yy][zz] = 1;
                 } else if (array[xx][yy] == zz) {
@@ -74,7 +75,7 @@ const long double alpha2 = k2 / (rho2 * c_p2);
 const long double c_interface = (alpha * alpha2) / (alpha + alpha2);
 
 // Time step in seconds
-const double dt = 1;
+const double dt = 2000;
 
 // Temperature settings
 const double temp_max = 350.15;
@@ -82,12 +83,14 @@ const double temp_ambient = 293.15;
 
 // Spacing
 const int spacing = 6;
-const int b_thick=2;
-const int z_height=5;
-const int x_pixels=200;
-const int y_pixels=400;
+const int b_thick = 2;
+const int z_height = 5;
+const int x_pixels = 200;
+const int y_pixels = 400;
+
 // Time initialization
 double t = 0.0;
+double scale=1000.0;
 
 // Area array
 vector<double> areas_full = {0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 1.0, 1.0, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333, 0.5, 1.0, 0.5, 0.333, 0.5, 0.333};
@@ -101,8 +104,9 @@ vector<array<int, 3>> water_neighbors_full = {
     {1, 1, 1}, {-1, -1, 1}, {1, -1, 1}, {-1, 1, 1}, {1, 1, -1}, {-1, -1, -1}, 
     {1, -1, -1}, {-1, 1, -1}
 };
-// Calculation of temperature increment
-double temp_inc = 20000 * dt / (rho * c_p);
+
+// Calculation of temperature increment    /scale
+double temp_inc = 200 * dt / (rho* c_p);
 
 int main() {
     // Initialize geometry and temperature arrays
@@ -121,8 +125,6 @@ int main() {
     // Integration loop
     print("Starting integration...");
     double total_heat = 0.0;
-    
-    while(!isnan(total_heat)){
     while (true) {
         // Energy adding phase
         for (int a = 0; a < geometry.size(); a++) {
@@ -138,65 +140,94 @@ int main() {
         // Heat diffusion phase using the Laplace operator
         vector<vector<vector<float>>> new_temperatures = temperatures;
         double heat_exchange = 0.0;
+        double heat_one=0.0;
 
         for (int z = 1; z < geometry[0][0].size() - 1; z++) {
             for (int x = 1; x < geometry.size() - 1; x++) {
                 for (int y = 1; y < geometry[0].size() - 1; y++) {
-                if ((geometry[x][y][z] > 0.5) 
-                    && (temperatures[x+1][y][z] > 0.5) 
-                    && (temperatures[x-1][y][z] > 0.5) 
-                    && (temperatures[x][y+1][z] > 0.5) 
-                    && (temperatures[x][y-1][z] > 0.5)
-                    && (temperatures[x][y][z+1] > 0.5)
-                    && (temperatures[x][y][z-1] > 0.5)) {
-                    
-                    int trueConditions = 0;
-                    if (temperatures[x+1][y][z] > 0.5) trueConditions++;
-                    if (temperatures[x-1][y][z] > 0.5) trueConditions++;
-                    if (temperatures[x][y+1][z] > 0.5) trueConditions++;
-                    if (temperatures[x][y-1][z] > 0.5) trueConditions++;
-                    if (temperatures[x][y][z+1] > 0.5) trueConditions++;
-                    if (temperatures[x][y][z-1] > 0.5) trueConditions++;
+                    if (geometry[x][y][z] > 0.5) {
+                        double laplacian = 0.0;
+                        int valid_neighbors = 0;
 
-                    double laplacian = (
-                        (temperatures[x+1][y][z] > 0.5 ? temperatures[x+1][y][z] : 0) +
-                        (temperatures[x-1][y][z] > 0.5 ? temperatures[x-1][y][z] : 0) +
-                        (temperatures[x][y+1][z] > 0.5 ? temperatures[x][y+1][z] : 0) +
-                        (temperatures[x][y-1][z] > 0.5 ? temperatures[x][y-1][z] : 0) +
-                        (temperatures[x][y][z+1] > 0.5 ? temperatures[x][y][z+1] : 0) +
-                        (temperatures[x][y][z-1] > 0.5 ? temperatures[x][y][z-1] : 0) -
-                        trueConditions * temperatures[x][y][z]
-                    );
-
-                    new_temperatures[x][y][z] += alpha * laplacian * dt;
-                }
-
-
-                    // Idealistic heat exchange with adjacent water (if adjacent to water)
-                    for (size_t i = 0; i < water_neighbors_full.size(); i++) {
-                        int nx = x + water_neighbors_full[i][0];
-                        int ny = y + water_neighbors_full[i][1];
-                        int nz = z + water_neighbors_full[i][2];
-                        
-                        if (geometry[nx][ny][nz] == 0.5) {  // Assuming water exists in half-voxel
-                            double temp_diff = temperatures[x][y][z] - temperatures[nx][ny][nz];
-                            double heat_transfer = c_interface * areas_full[i] * temp_diff / water_distances_full[i];
-                            heat_exchange += heat_transfer;
-                            new_temperatures[x][y][z] -= heat_transfer / (rho * c_p);
-                            new_temperatures[nx][ny][nz] =temp_ambient;  // Water temperature adjustment
+                        // Check each neighboring point and add its temperature if valid
+                        if (geometry[x+1][y][z] > 0.5) {
+                            laplacian += temperatures[x+1][y][z];
+                            valid_neighbors++;
                         }
+                        if (geometry[x-1][y][z] > 0.5) {
+                            laplacian += temperatures[x-1][y][z];
+                            valid_neighbors++;
+                        }
+                        if (geometry[x][y+1][z] > 0.5) {
+                            laplacian += temperatures[x][y+1][z];
+                            valid_neighbors++;
+                        }
+                        if (geometry[x][y-1][z] > 0.5) {
+                            laplacian += temperatures[x][y-1][z];
+                            valid_neighbors++;
+                        }
+                        if (geometry[x][y][z+1] > 0.5) {
+                            laplacian += temperatures[x][y][z+1];
+                            valid_neighbors++;
+                        }
+                        if (geometry[x][y][z-1] > 0.5) {
+                            laplacian += temperatures[x][y][z-1];
+                            valid_neighbors++;
+                        }
+
+                        // Adjust the Laplacian 
+                       // Adjust the Laplacian to factor in only the valid neighbors
+                        laplacian -= valid_neighbors * temperatures[x][y][z];  // Subtract the central point contribution
+
+                        // Update the new temperature based on the valid neighbors
+                        if (valid_neighbors > 0) {  // Only update if there are valid neighbors
+                            new_temperatures[x][y][z] += alpha * laplacian * dt / valid_neighbors;
+                        }
+
+                        // Idealistic heat exchange with adjacent water (if adjacent to water)
+                        double total_heat_transfer = 0.0;
+                        int valid_water_neighbors = 0;  // Count the valid water neighbors
+
+                        for (size_t i = 0; i < water_neighbors_full.size(); i++) {
+                            int nx = x + water_neighbors_full[i][0];
+                            int ny = y + water_neighbors_full[i][1];
+                            int nz = z + water_neighbors_full[i][2];
+
+                            // Check if the neighbor is a valid water voxel
+                            if (geometry[nx][ny][nz] == 0.5) {
+                                double temp_diff = temperatures[x][y][z] - temperatures[nx][ny][nz];
+                                double heat_transfer = c_interface * areas_full[i] * temp_diff / water_distances_full[i];
+
+                                // Accumulate the total heat transfer
+                                total_heat_transfer += heat_transfer;
+
+                                // Adjust the temperatures based on the heat transfer
+                                new_temperatures[x][y][z] -= heat_transfer / (rho * c_p);
+                                new_temperatures[nx][ny][nz] = temp_ambient;  // Water temperature adjustment
+
+                                valid_water_neighbors++;  // Increment valid water neighbor count
+                            }
+                        }
+
+                        // Optionally, you could scale or handle the valid water neighbor count afterward
+                        heat_exchange += total_heat_transfer;  
+                       // Accumulate the heat exchange for reporting
                     }
                 }
             }
         }
 
+        // Update the temperatures for the next iteration
         temperatures = new_temperatures;
         t += dt;
-        total_heat += heat_exchange;
+        total_heat = heat_exchange;
 
-        // Print time and heat
-        print("Time: " + to_string(t) + "s, Heat: " + to_string(total_heat) + " J    at one iteration: "+ to_string(heat_exchange) + " J");
-    }}
+        // Print time and total heat exchanged
+        print("Time: " + to_string(t) + "s, Heat exchange: " + to_string(total_heat) + " J");
+
+        // Optional: Break the loop if needed (e.g., time exceeds certain limit)
+        
+    }
 
     return 0;
 }
