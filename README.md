@@ -1,7 +1,7 @@
 # 3D-heat-transport
 
-this sim ll give you idealised heatflof between two arbitrart surfaces, with one of them one is steady.
+this sim ll give you idealised heatflow between two arbitrary surfaces, one of them one is steady.
 
-just a numbers in time.
+just a numbers in time. or in iterations.
 
 task done (?)
