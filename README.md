@@ -6,4 +6,6 @@ of course and curse, in 3d
 
 just a numbers in time. or in iterations.
 
-task done (?)
+task done - compliant with table data.
+
+antigrid geometry the best
