@@ -18,6 +18,25 @@ void print(const string& a) {
     cout << a << endl;
 }
 
+vector<vector<float>> create_agridgeometry(int x_size, int y_size, int fin_height, int base_thickness, int spacing) {
+    vector<vector<float>> img_array(x_size, vector<float>(y_size, base_thickness));
+
+    print("Generating basic geometry:");
+    
+    for (int i = 0; i < x_size; i++) {
+        for (int j = 0; j < y_size; j++) {
+            img_array[i][j] += base_thickness;
+            if ((i > (x_size / 2 - x_size / 4) && i < (x_size / 2 + x_size / 4)) && 
+                (j > (y_size / 2 - y_size / 4) && j < (y_size / 2 + y_size / 4)) && 
+              ! ( (i % 2!= 0)||(j%2!=0))) {
+                img_array[i][j] += fin_height;
+            }
+        }
+    }
+    
+    return img_array;
+} 
+
 vector<vector<float>> create_gridgeometry(int x_size, int y_size, int fin_height, int base_thickness, int spacing) {
     vector<vector<float>> img_array(x_size, vector<float>(y_size, base_thickness));
 
@@ -45,9 +64,9 @@ vector<vector<float>> create_circogeometry(int x_size, int y_size, int fin_heigh
     for (int i = 0; i < x_size; i++) {
         for (int j = 0; j < y_size; j++) {
             img_array[i][j] += base_thickness;
-            for(int k=0;k<350;k+=spacing){
+            for(int k=0;k<350;k+=2*spacing){
             if (
-                ((i-x_size)*(i-x_size)+(j-y_size)*(j-y_size)<k*k)){
+                ((i-x_size/2)*(i-x_size/2)+(j-y_size/2)*(j-y_size/2)<k*k)){
                 img_array[i][j] += fin_height;
             }}
         }
@@ -155,7 +174,7 @@ double temp_inc = 100 * dt / (rho* c_p)/ (x_pixels / 2 - x_pixels / 3)/(y_pixels
 
 int main() {
     // Initialize geometry and temperature arrays
-    vector<vector<vector<float>>> geometry = voxelize_2Darray(create_geometry(x_pixels, y_pixels, z_height, b_thick, spacing), x_pixels, y_pixels);
+    vector<vector<vector<float>>> geometry = voxelize_2Darray(create_agridgeometry(x_pixels, y_pixels, z_height, b_thick, spacing), x_pixels, y_pixels);
     vector<vector<vector<float>>> temperatures = geometry;
 
     // Initialize temperatures to ambient temperature
@@ -170,7 +189,7 @@ int main() {
     // Integration loop
     print("Starting integration...");
     ofstream file; 
-    file.open("/storage/emulated/0/Download/CodingC++/normData.txt"); 
+    file.open("/storage/emulated/0/Download/CodingC++/agridData.txt"); 
     double total_heat = 0.0;
     while (true) {
         // Energy adding phase
@@ -299,8 +318,8 @@ file<<to_string(t)<<'\t'<<to_string(sheat)<<endl;
 file.close();
 print("inegration done");
 ofstream f2; 
-f2.open("/storage/emulated/0/Download/CodingC++/geonorm.txt");
- vector<vector<float>> geo = create_gridgeometry(x_pixels, y_pixels, z_height, b_thick, spacing);
+f2.open("/storage/emulated/0/Download/CodingC++/geoagrid.txt");
+ vector<vector<float>> geo = create_agridgeometry(x_pixels, y_pixels, z_height, b_thick, spacing);
  for(int i=0;i<geo.size();i++){
  for(int j =0;j<geo[0].size();j++){
  f2<<to_string(i)<<'\t'<<to_string(j)<<'\t'<<to_string(geo[i][j])<<endl;
